@@ -24,11 +24,14 @@ jobs:
         run: |
           npx --yes @puppeteer/browsers install firefox@stable_157.0.1 --path "$RUNNER_TEMP/browsers" | tee install.txt
           echo "FIREFOX=$(tail -1 install.txt | cut -d' ' -f2-)" >> "$GITHUB_ENV"
+      - name: Install geckodriver 0.37.1
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/gd" && cd "$RUNNER_TEMP/gd" && npm init -y > /dev/null && npm install --no-audit --no-fund geckodriver@7.0.0 > /dev/null
+          echo "GECKO=$(node --input-type=module -e "import { download } from 'geckodriver'; console.log(await download('0.37.1'))" | tail -1)" >> "$GITHUB_ENV"
       - name: Probe with the intercept, ${{ matrix.parallel }} at the same time
         shell: bash
         run: |
-          GECKO="$GECKOWEBDRIVER/geckodriver"
-          if [ "$RUNNER_OS" = "Windows" ]; then GECKO="$GECKOWEBDRIVER/geckodriver.exe"; fi
           "$GECKO" --version | head -1
           for i in $(seq 1 ${{ matrix.parallel }}); do node debug/request-body-getdata.mjs "$GECKO" "$FIREFOX" 10 intercept > "probe-$i.log" 2>&1 & done
           wait
@@ -36,6 +39,4 @@ jobs:
       - name: Probe without the intercept
         shell: bash
         run: |
-          GECKO="$GECKOWEBDRIVER/geckodriver"
-          if [ "$RUNNER_OS" = "Windows" ]; then GECKO="$GECKOWEBDRIVER/geckodriver.exe"; fi
           node debug/request-body-getdata.mjs "$GECKO" "$FIREFOX" 10 no-intercept
