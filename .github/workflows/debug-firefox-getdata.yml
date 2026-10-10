@@ -33,7 +33,7 @@ jobs:
         shell: bash
         run: |
           "$GECKO" --version | head -1
-          for i in $(seq 1 ${{ matrix.parallel }}); do node debug/request-body-getdata.mjs "$GECKO" "$FIREFOX" 10 intercept > "probe-$i.log" 2>&1 & done
+          for i in $(seq 1 ${{ matrix.parallel }}); do node debug/request-body-getdata.mjs "$GECKO" "$FIREFOX" 30 intercept > "probe-$i.log" 2>&1 & done
           wait
           for f in probe-*.log; do echo "== $f"; cat "$f"; done
       - name: Probe without the intercept

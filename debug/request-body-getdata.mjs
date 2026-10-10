@@ -15,7 +15,7 @@ const apiUrl = 'https://guinea-pig.webdriver.io/api/foo'
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const log = (...args) => console.log(new Date().toISOString(), ...args)
 
-const geckodriver = spawn(geckodriverPath, ['--port', String(port)], { stdio: 'ignore' })
+const geckodriver = spawn(geckodriverPath, ['--port', String(port), '--websocket-port', String(port + 1000)], { stdio: 'ignore' })
 let session
 let ws
 
