@@ -1,0 +1,41 @@
+# Temporary: measures how long Firefox answers `network.getData` for a request body (BiDi only), on Windows and Linux
+name: Debug Firefox getData
+
+on:
+  push:
+    branches:
+      - debug/firefox-request-getdata
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        parallel: [1, 5]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install Firefox 157.0.1
+        shell: bash
+        run: |
+          npx --yes @puppeteer/browsers install firefox@stable_157.0.1 --path "$RUNNER_TEMP/browsers" | tee install.txt
+          echo "FIREFOX=$(tail -1 install.txt | cut -d' ' -f2-)" >> "$GITHUB_ENV"
+      - name: Probe with the intercept, ${{ matrix.parallel }} at the same time
+        shell: bash
+        run: |
+          GECKO="$GECKOWEBDRIVER/geckodriver"
+          if [ "$RUNNER_OS" = "Windows" ]; then GECKO="$GECKOWEBDRIVER/geckodriver.exe"; fi
+          "$GECKO" --version | head -1
+          for i in $(seq 1 ${{ matrix.parallel }}); do node debug/request-body-getdata.mjs "$GECKO" "$FIREFOX" 10 intercept > "probe-$i.log" 2>&1 & done
+          wait
+          for f in probe-*.log; do echo "== $f"; cat "$f"; done
+      - name: Probe without the intercept
+        shell: bash
+        run: |
+          GECKO="$GECKOWEBDRIVER/geckodriver"
+          if [ "$RUNNER_OS" = "Windows" ]; then GECKO="$GECKOWEBDRIVER/geckodriver.exe"; fi
+          node debug/request-body-getdata.mjs "$GECKO" "$FIREFOX" 10 no-intercept
